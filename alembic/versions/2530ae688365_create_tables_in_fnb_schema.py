@@ -1,0 +1,115 @@
+"""create_tables_in_fnb_schema
+
+Revision ID: 2530ae688365
+Revises: d27e5407438e
+Create Date: 2024-03-19 15:30:00.000000
+
+"""
+from typing import Sequence, Union
+
+from alembic import op
+import sqlalchemy as sa
+from sqlalchemy.dialects import postgresql
+
+# revision identifiers, used by Alembic.
+revision: str = '2530ae688365'
+down_revision: Union[str, None] = 'd27e5407438e'
+branch_labels: Union[str, Sequence[str], None] = None
+depends_on: Union[str, Sequence[str], None] = None
+
+
+def upgrade() -> None:
+    # Create schema if it doesn't exist
+    op.execute("CREATE SCHEMA IF NOT EXISTS fnb")
+    
+    # Create audit_logs table
+    op.create_table('audit_logs',
+        sa.Column('id', sa.Integer(), nullable=False),
+        sa.Column('date', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=True),
+        sa.Column('entitlement_type', sa.String(), nullable=True),
+        sa.Column('name', sa.String(), nullable=True),
+        sa.Column('registration_id', sa.Integer(), nullable=True),
+        sa.Column('lunch', sa.Integer(), nullable=True),
+        sa.Column('dinner', sa.Integer(), nullable=True),
+        sa.Column('lunch_takenon', sa.DateTime(timezone=True), nullable=True),
+        sa.Column('dinner_takenon', sa.DateTime(timezone=True), nullable=True),
+        sa.PrimaryKeyConstraint('id'),
+        schema='fnb'
+    )
+    op.create_index(op.f('ix_fnb_audit_logs_id'), 'audit_logs', ['id'], unique=False, schema='fnb')
+
+    # Create food_data table
+    op.create_table('food_data',
+        sa.Column('id', sa.Integer(), nullable=False),
+        sa.Column('name', sa.String(), nullable=True),
+        sa.Column('description', sa.Text(), nullable=True),
+        sa.Column('category', sa.String(), nullable=True),
+        sa.Column('price', sa.Float(), nullable=True),
+        sa.Column('currency', sa.String(), nullable=True),
+        sa.Column('is_vegetarian', sa.Boolean(), nullable=True),
+        sa.Column('is_vegan', sa.Boolean(), nullable=True),
+        sa.Column('is_gluten_free', sa.Boolean(), nullable=True),
+        sa.Column('allergens', sa.String(), nullable=True),
+        sa.Column('nutritional_info', sa.Text(), nullable=True),
+        sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=True),
+        sa.Column('updated_at', sa.DateTime(timezone=True), nullable=True),
+        sa.PrimaryKeyConstraint('id'),
+        schema='fnb'
+    )
+    op.create_index(op.f('ix_fnb_food_data_category'), 'food_data', ['category'], unique=False, schema='fnb')
+    op.create_index(op.f('ix_fnb_food_data_id'), 'food_data', ['id'], unique=False, schema='fnb')
+    op.create_index(op.f('ix_fnb_food_data_name'), 'food_data', ['name'], unique=False, schema='fnb')
+
+    # Create registration_types table
+    op.create_table('registration_types',
+        sa.Column('id', sa.Integer(), nullable=False),
+        sa.Column('name', sa.String(), nullable=True),
+        sa.Column('description', sa.String(), nullable=True),
+        sa.Column('requires_approval', sa.Boolean(), nullable=True),
+        sa.Column('max_participants', sa.Integer(), nullable=True),
+        sa.Column('registration_fee', sa.Integer(), nullable=True),
+        sa.Column('is_active', sa.Boolean(), nullable=True),
+        sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=True),
+        sa.Column('updated_at', sa.DateTime(timezone=True), nullable=True),
+        sa.PrimaryKeyConstraint('id'),
+        schema='fnb'
+    )
+    op.create_index(op.f('ix_fnb_registration_types_id'), 'registration_types', ['id'], unique=False, schema='fnb')
+    op.create_index(op.f('ix_fnb_registration_types_name'), 'registration_types', ['name'], unique=True, schema='fnb')
+
+    # Create entitlements table
+    op.create_table('entitlements',
+        sa.Column('id', sa.Integer(), nullable=False),
+        sa.Column('user_id', sa.Integer(), nullable=True),
+        sa.Column('entitlement_type', sa.String(), nullable=True),
+        sa.Column('description', sa.String(), nullable=True),
+        sa.Column('is_active', sa.Boolean(), nullable=True),
+        sa.Column('valid_from', sa.DateTime(timezone=True), nullable=True),
+        sa.Column('valid_until', sa.DateTime(timezone=True), nullable=True),
+        sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=True),
+        sa.Column('updated_at', sa.DateTime(timezone=True), nullable=True),
+        sa.ForeignKeyConstraint(['user_id'], ['users.id'], ),
+        sa.PrimaryKeyConstraint('id'),
+        schema='fnb'
+    )
+    op.create_index(op.f('ix_fnb_entitlements_entitlement_type'), 'entitlements', ['entitlement_type'], unique=False, schema='fnb')
+    op.create_index(op.f('ix_fnb_entitlements_id'), 'entitlements', ['id'], unique=False, schema='fnb')
+
+
+def downgrade() -> None:
+    # Drop tables in reverse order
+    op.drop_index(op.f('ix_fnb_entitlements_id'), table_name='entitlements', schema='fnb', if_exists=True)
+    op.drop_index(op.f('ix_fnb_entitlements_entitlement_type'), table_name='entitlements', schema='fnb', if_exists=True)
+    op.drop_table('entitlements', schema='fnb')
+    
+    op.drop_index(op.f('ix_fnb_registration_types_name'), table_name='registration_types', schema='fnb', if_exists=True)
+    op.drop_index(op.f('ix_fnb_registration_types_id'), table_name='registration_types', schema='fnb', if_exists=True)
+    op.drop_table('registration_types', schema='fnb')
+    
+    op.drop_index(op.f('ix_fnb_food_data_name'), table_name='food_data', schema='fnb', if_exists=True)
+    op.drop_index(op.f('ix_fnb_food_data_id'), table_name='food_data', schema='fnb', if_exists=True)
+    op.drop_index(op.f('ix_fnb_food_data_category'), table_name='food_data', schema='fnb', if_exists=True)
+    op.drop_table('food_data', schema='fnb')
+    
+    op.drop_index(op.f('ix_fnb_audit_logs_id'), table_name='audit_logs', schema='fnb', if_exists=True)
+    op.drop_table('audit_logs', schema='fnb')
