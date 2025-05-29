@@ -37,13 +37,16 @@ Thumbs.db
 
 # Environment variables
 .env
+deployment-package/.env
 
 # Docker
 *.tar.gz
-
+*.tar
+deployment-package/*.tar.gz
+deployment-package/*.tar
 # Logs
 *.log
 
 # Database
 *.db
-*.sqlite3 
+*.sqlite3

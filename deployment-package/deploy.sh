@@ -38,8 +38,21 @@ echo -e "${GREEN}Loading Docker image from tar file...${NC}"
 docker load < $TAR_FILE
 
 docker rm -f $IMAGE_NAME 2>/dev/null
-echo -e "${GREEN}Creating and starting local Docker container...${NC}"
-docker run -d -p 8000:8000 --name $IMAGE_NAME --env-file .env $IMAGE_NAME
+
+NETWORK_NAME="festival-access-control_app-net"
+POSTGRES_CONTAINER_NAME="festival-acl-db"
+
+if docker network ls --format '{{.Name}}' | grep -q "^${NETWORK_NAME}$"; then
+  echo -e "${GREEN}Docker network '${NETWORK_NAME}' found. Running container on this network...${NC}"
+  DB_HOST=$POSTGRES_CONTAINER_NAME
+  docker run -d -p 8000:8000 --name $IMAGE_NAME --network $NETWORK_NAME --env-file .env $IMAGE_NAME
+else
+  echo -e "${RED}Docker network '${NETWORK_NAME}' not found. Running container without custom network and using localhost for DB...${NC}"
+  DB_HOST=localhost
+  docker run -d -p 8000:8000 --name $IMAGE_NAME --env-file .env $IMAGE_NAME
+fi
+
+sed -i.bak "s|DATABASE_URL=.*|DATABASE_URL=postgresql+psycopg2://admin:admin@$DB_HOST:5432/postgres|" .env
 
 read -p "Do you want to deploy to Azure App Service? (y/n): " DEPLOY_AZURE
 
