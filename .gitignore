@@ -38,6 +38,7 @@ Thumbs.db
 # Environment variables
 .env
 deployment-package/.env
+deployment-package/.env.bak
 
 # Docker
 *.tar.gz
