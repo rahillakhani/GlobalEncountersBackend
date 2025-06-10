@@ -1,9 +1,11 @@
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import cast, Date, func
-from datetime import datetime
+from datetime import datetime, timezone
 from app.models.food_log import FoodLog
 from app.models.participant import Participant
-from app.schemas.food_log import FoodLogUpdate
+from app.schemas.food_log import FoodLogUpdate, FoodLogCreate
+import logging
+import datetime
 
 def get_food_logs_by_schedule(db: Session, registrationid: str, date_str: str):
     """
@@ -47,10 +49,9 @@ def get_food_logs_by_schedule(db: Session, registrationid: str, date_str: str):
         if not food_logs:
             return []
         
-        # Format response with all fields
+        # Format response with all fields (removed userid)
         return [
             {
-                "userid": log.userid,
                 "name": log.name,
                 "registration_id": log.registration_id,
                 "lunch": log.lunch,
@@ -80,53 +81,57 @@ def update_food_log(db: Session, update_data: FoodLogUpdate):
         FoodLog: Updated food log or None if creation not possible
     """
     try:
-        # Find existing food log by registration_id and date
-        food_log = db.query(FoodLog).filter(
+        if not update_data.registration_id or not update_data.date:
+            raise ValueError("Registration ID and date are required for updating food logs")
+
+        logger = logging.getLogger(__name__)
+        logger.info(f"Searching for food log with registration_id={update_data.registration_id} and date={update_data.date}")
+
+        input_date = update_data.date
+        # Use datetime.timezone.utc if available, else skip conversion
+        tz_utc = getattr(datetime, 'timezone', None)
+        if tz_utc is not None and input_date.tzinfo is not None:
+            input_date = input_date.astimezone(tz_utc.utc)
+
+        # First try to find an existing entry for this registration_id and date
+        existing_log = db.query(FoodLog).filter(
             FoodLog.registration_id == update_data.registration_id,
-            func.date(FoodLog.date) == update_data.date.date()
+            func.date(FoodLog.date) == input_date.date()
         ).first()
-        
-        if not food_log:
-            # If no existing food log, only create if userid is provided
-            if update_data.userid is None:
-                # Cannot create a new log without userid due to unique constraint
-                return None # Return None to indicate creation was not possible
-            
-            # Create a new food log entry
+
+        if existing_log:
+            logger.info(f"Found existing food log entry: {existing_log}")
+            # Update the existing entry
+            if update_data.name is not None:
+                existing_log.name = update_data.name
+            if update_data.lunch is not None:
+                existing_log.lunch = update_data.lunch
+            if update_data.dinner is not None:
+                existing_log.dinner = update_data.dinner
+            if update_data.lunch_takenon is not None:
+                existing_log.lunch_takenon = update_data.lunch_takenon
+            if update_data.dinner_takenon is not None:
+                existing_log.dinner_takenon = update_data.dinner_takenon
+            food_log = existing_log
+        else:
+            logger.info("No existing food log found, creating new entry")
             food_log = FoodLog(
-                userid=update_data.userid,
                 name=update_data.name,
                 registration_id=update_data.registration_id,
-                date=update_data.date,
+                date=input_date,
                 lunch=update_data.lunch,
                 dinner=update_data.dinner,
-                lunch_takenon=update_data.lunch_takenon if update_data.lunch_takenon is not None else (datetime.now() if update_data.lunch is not None else None),
-                dinner_takenon=update_data.dinner_takenon if update_data.dinner_takenon is not None else (datetime.now() if update_data.dinner is not None else None)
+                lunch_takenon=update_data.lunch_takenon,
+                dinner_takenon=update_data.dinner_takenon
             )
             db.add(food_log)
-        else:
-            # Update existing food log fields
-            # Only update fields that are explicitly provided in update_data and are different
-            if update_data.userid is not None and food_log.userid != update_data.userid:
-                food_log.userid = update_data.userid
-            if update_data.name is not None and food_log.name != update_data.name:
-                food_log.name = update_data.name
-            if update_data.lunch is not None and food_log.lunch != update_data.lunch:
-                food_log.lunch = update_data.lunch
-                if update_data.lunch_takenon is not None:
-                    food_log.lunch_takenon = update_data.lunch_takenon
-                else:
-                    food_log.lunch_takenon = datetime.now()
-            if update_data.dinner is not None and food_log.dinner != update_data.dinner:
-                food_log.dinner = update_data.dinner
-                if update_data.dinner_takenon is not None:
-                    food_log.dinner_takenon = update_data.dinner_takenon
-                else:
-                    food_log.dinner_takenon = datetime.now()
 
         db.commit()
         db.refresh(food_log)
+        logger.info(f"Final food log state: {food_log}")
         return food_log
-        
+
     except Exception as e:
+        db.rollback()
+        logger.error(f"Error in update_food_log: {str(e)}", exc_info=True)
         raise ValueError(f"Error updating food log: {str(e)}") 

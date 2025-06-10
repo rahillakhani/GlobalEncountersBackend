@@ -1,11 +1,11 @@
 from fastapi import APIRouter, Depends, HTTPException, Response
 from sqlalchemy.orm import Session
-from datetime import datetime
+from datetime import datetime, timezone
 import logging
 from sqlalchemy import cast, Date, text, func
 from app.db.session import get_db
 from app.models.participant import Participant
-from app.schemas.participant import ParticipantBase, ParticipantUpdate, ParticipantResponse, ParticipantListResponse, DetailResponse
+from app.schemas.participant import ParticipantBase, ParticipantUpdate, ParticipantResponse, ParticipantListResponse, DetailResponse, ParticipantCreate
 from app.crud import participant as crud
 from typing import Union
 
@@ -63,8 +63,7 @@ def get_participant_by_schedule(
             )
         else:
             logger.info("No participant found")
-            response.status_code = 404
-            return DetailResponse(detail="Data not found")
+            return DetailResponse(detail="No data found")
             
     except ValueError as e:
         if "time data" in str(e):
@@ -75,4 +74,35 @@ def get_participant_by_schedule(
     except Exception as e:
         logger.error(f"Error occurred: {str(e)}", exc_info=True)
         response.status_code = 500
-        return DetailResponse(detail=f"An error occurred: {str(e)}") 
+        return DetailResponse(detail=f"An error occurred: {str(e)}")
+
+@router.post("/", response_model=ParticipantListResponse)
+def create_participant(
+    *,
+    db: Session = Depends(get_db),
+    participant_in: ParticipantCreate
+):
+    """
+    Create a new participant.
+    
+    Args:
+        participant_in (ParticipantCreate): The participant data to create
+        
+    Returns:
+        ParticipantListResponse: Created participant data
+    """
+    try:
+        participant = crud.create_participant(db, participant_in)
+        return ParticipantListResponse(
+            userid=participant.id,
+            name=participant.participant_type,
+            registration_id=participant.registrant_id,
+            date=participant.date,
+            detail=None
+        )
+    except Exception as e:
+        logger.error(f"Error creating participant: {str(e)}", exc_info=True)
+        raise HTTPException(
+            status_code=500,
+            detail=f"An error occurred while creating participant: {str(e)}"
+        ) 

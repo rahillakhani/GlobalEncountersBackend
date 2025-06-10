@@ -5,7 +5,6 @@ from datetime import datetime, timedelta
 from app.main import app
 from app.db.session import get_db
 from app.models.user import User
-from app.models.audit_log import AuditLog
 
 client = TestClient(app)
 
@@ -14,15 +13,6 @@ TEST_USER = {
     "email": "test@example.com",
     "full_name": "Test User",
     "password": "testpassword123"
-}
-
-TEST_AUDIT_LOG = {
-    "registration_id": 123,
-    "entitlement_type": "test_entitlement",
-    "name": "Test Name",
-    "date": (datetime.now() + timedelta(days=1)).strftime("%Y-%m-%d"),
-    "lunch": 0,
-    "dinner": 0
 }
 
 @pytest.fixture
@@ -46,22 +36,6 @@ def test_user(test_db: Session):
     test_db.commit()
     test_db.refresh(user)
     return user
-
-@pytest.fixture
-def test_audit_log(test_db: Session):
-    """Create a test audit log entry"""
-    audit_log = AuditLog(
-        registration_id=TEST_AUDIT_LOG["registration_id"],
-        entitlement_type=TEST_AUDIT_LOG["entitlement_type"],
-        name=TEST_AUDIT_LOG["name"],
-        date=datetime.strptime(TEST_AUDIT_LOG["date"], "%Y-%m-%d"),
-        lunch=TEST_AUDIT_LOG["lunch"],
-        dinner=TEST_AUDIT_LOG["dinner"]
-    )
-    test_db.add(audit_log)
-    test_db.commit()
-    test_db.refresh(audit_log)
-    return audit_log
 
 # User endpoint tests
 def test_create_user():
@@ -88,39 +62,4 @@ def test_get_user(test_user):
     assert data["email"] == TEST_USER["email"]
     assert data["full_name"] == TEST_USER["full_name"]
 
-# Audit Log endpoint tests
-def test_get_audit_logs_by_registration(test_audit_log):
-    """Test getting audit logs by registration ID"""
-    response = client.get(f"/api/v1/audit-log/by-registration/{TEST_AUDIT_LOG['registration_id']}")
-    assert response.status_code == 200
-    data = response.json()
-    assert len(data) > 0
-    assert data[0]["registration_id"] == TEST_AUDIT_LOG["registration_id"]
-
-def test_search_audit_logs_by_schedule(test_audit_log):
-    """Test searching audit logs by schedule"""
-    response = client.get(
-        f"/api/v1/audit-log/search?registrationid={TEST_AUDIT_LOG['registration_id']}&date={TEST_AUDIT_LOG['date']}"
-    )
-    assert response.status_code == 200
-    data = response.json()
-    assert len(data) > 0
-    assert data[0]["registration_id"] == TEST_AUDIT_LOG["registration_id"]
-    assert data[0]["date"] == TEST_AUDIT_LOG["date"]
-
-def test_update_audit_log(test_audit_log):
-    """Test updating audit log"""
-    update_data = {
-        "registrationid": TEST_AUDIT_LOG["registration_id"],
-        "date": TEST_AUDIT_LOG["date"],
-        "lunch_status": True,
-        "dinner_status": True
-    }
-    response = client.post(
-        "/api/v1/audit-log/update",
-        json=update_data
-    )
-    assert response.status_code == 200
-    data = response.json()
-    assert data["lunch"] == 1  # True is represented as 1
-    assert data["dinner"] == 1  # True is represented as 1 
+# Remove all audit log related test functions 

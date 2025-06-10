@@ -148,6 +148,7 @@ def get_food_logs_by_schedule(
         ).first()
 
         if not food_log:
+            response.status_code = 404
             return DetailResponse(detail="No data found")
 
         return FoodLogListResponse(

@@ -17,6 +17,7 @@ router = APIRouter()
 def get_food_logs_by_schedule(
     registrationid: int,
     date_str: str,
+    response: Response,
     db: Session = Depends(deps.get_db)
 ):
     """
@@ -34,7 +35,7 @@ def get_food_logs_by_schedule(
         if not food_log:
             return DetailResponse(detail="No data found")
 
-        # Convert the food log to a FoodLogSchema and wrap it in a list
+        # Convert the food log to a FoodLogSchema (which no longer includes userid) and wrap it in a list
         food_log_schema = FoodLogSchema.from_orm(food_log)
         return FoodLogListResponse(data=[food_log_schema])
 
@@ -81,4 +82,56 @@ def update_food_log(
     except Exception as e:
         logger.error(f"Error updating food log: {str(e)}", exc_info=True)
         response.status_code = 500
-        return DetailResponse(detail=f"An error occurred: {str(e)}") 
+        return DetailResponse(detail=f"An error occurred: {str(e)}")
+
+@router.delete("/{registration_id}/{date_str}", response_model=DetailResponse)
+def delete_food_log(
+    registration_id: int,
+    date_str: str,
+    db: Session = Depends(get_db)
+):
+    """
+    Delete a food log entry for a specific registration ID and date.
+    
+    Args:
+        registration_id (int): The registration ID of the food log to delete
+        date_str (str): The date of the food log to delete in YYYY-MM-DD format
+        
+    Returns:
+        DetailResponse: Success or error message
+    """
+    try:
+        # Convert date string to datetime
+        search_date = datetime.strptime(date_str, "%Y-%m-%d").date()
+        
+        # Find the food log entry
+        food_log = db.query(FoodLog).filter(
+            FoodLog.registration_id == registration_id,
+            func.date(FoodLog.date) == search_date
+        ).first()
+        
+        if not food_log:
+            raise HTTPException(
+                status_code=404,
+                detail="Food log not found"
+            )
+        
+        # Delete the entry
+        db.delete(food_log)
+        db.commit()
+        
+        return DetailResponse(detail="Food log deleted successfully")
+        
+    except ValueError as e:
+        if "time data" in str(e):
+            raise HTTPException(
+                status_code=400,
+                detail="Invalid date format. Please use YYYY-MM-DD"
+            )
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.error(f"Error deleting food log: {str(e)}", exc_info=True)
+        raise HTTPException(
+            status_code=500,
+            detail=f"An error occurred while deleting food log: {str(e)}"
+        ) 

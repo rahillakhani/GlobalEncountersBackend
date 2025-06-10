@@ -14,7 +14,6 @@ class ParticipantData(BaseModel):
         from_attributes = True
 
 class FoodLogBase(BaseModel):
-    userid: Optional[int] = None
     name: Optional[str] = None
     registration_id: Optional[int] = None
     date: Optional[datetime] = None
@@ -27,14 +26,15 @@ class FoodLogBase(BaseModel):
         from_attributes = True
 
 class FoodLogCreate(FoodLogBase):
-    pass
+    registration_id: int  # Make registration_id required for creation
+    date: datetime  # Make date required for creation
 
 class FoodLogUpdate(FoodLogBase):
     pass
 
 class FoodLogSchema(FoodLogBase):
-    # FoodLogSchema now correctly represents the model's primary key
-    userid: int # Changed from 'id' to 'userid' as per FoodLog model's primary key
+    registration_id: int  # Make registration_id required in response
+    date: datetime  # Make date required in response
 
     class Config:
         from_attributes = True
