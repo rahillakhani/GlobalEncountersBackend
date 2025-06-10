@@ -8,8 +8,7 @@ WORKDIR /app
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PYTHONPATH=/app \
-    PORT=8000 \
-    ACCESS_TOKEN_EXPIRE_MINUTES=30
+    PORT=8000
 
 # Create a non-root user
 RUN useradd -m -u 1000 appuser

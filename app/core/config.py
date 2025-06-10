@@ -1,26 +1,19 @@
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic import Field
 from typing import Optional
 
 class Settings(BaseSettings):
-    PROJECT_NAME: str = "Global Encounters"
+    model_config = SettingsConfigDict(env_file=".env", extra="ignore", case_sensitive=True)
+
+    PROJECT_NAME: str = "Global Encounters API"
     VERSION: str = "1.0.0"
     API_V1_STR: str = "/api/v1"
     
-    POSTGRES_SERVER: str = "52.168.133.23"
-    POSTGRES_PORT: str = "5432"
-    POSTGRES_USER: str = "admin"
-    POSTGRES_PASSWORD: str = "admin"
-    POSTGRES_DB: str = "postgres"
-    SQLALCHEMY_DATABASE_URI: Optional[str] = None
-
-    @property
-    def get_database_url(self) -> str:
-        if self.SQLALCHEMY_DATABASE_URI:
-            return self.SQLALCHEMY_DATABASE_URI
-        return f"postgresql://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}@{self.POSTGRES_SERVER}:{self.POSTGRES_PORT}/{self.POSTGRES_DB}"
-
-    class Config:
-        case_sensitive = True
-        env_file = ".env"  # Load environment variables from .env file
+    # Database settings - explicitly mapped from DATABASE_URL in .env
+    database_url: str = Field(alias="DATABASE_URL") # Using alias to map to DATABASE_URL in .env
+    
+    # Optional settings for other environment variables (if they exist in .env)
+    jwt_secret_key: Optional[str] = Field(None, alias="JWT_SECRET_KEY")
+    port: Optional[int] = Field(8000, alias="PORT")
 
 settings = Settings() 

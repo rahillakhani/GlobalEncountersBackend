@@ -1,25 +1,39 @@
 from pydantic import BaseModel
-from typing import Optional
+from typing import Optional, List, Union
 from datetime import datetime
 
-class AuditLogSchema(BaseModel):
-    id: int
-    date: datetime
-    entitlement_type: str
-    name: str
+class AuditLogBase(BaseModel):
     registration_id: int
-    lunch: int  # 0 for False, 1 for True
-    dinner: int  # 0 for False, 1 for True
-    lunch_takenon: Optional[datetime] = None
-    dinner_takenon: Optional[datetime] = None
+    entity_id: int
+    action: str
+    timestamp: datetime
+    details: Optional[str] = None
+
+class AuditLogCreate(AuditLogBase):
+    pass
+
+class AuditLogUpdate(BaseModel):
+    registrationid: int
+    date: str
+    action: str
+    details: Optional[str] = None
+
+class AuditLogSchema(AuditLogBase):
+    id: int
 
     class Config:
         from_attributes = True
 
-class AuditLogUpdate(BaseModel):
-    registrationid: str
-    date: str
-    lunch: Optional[bool] = None
-    dinner: Optional[bool] = None
-    lunch_takenon: Optional[str] = None
-    dinner_takenon: Optional[str] = None 
+class AuditLogResponse(BaseModel):
+    data: Union[AuditLogSchema, str]
+    detail: Optional[str] = None
+
+    class Config:
+        from_attributes = True
+
+class AuditLogListResponse(BaseModel):
+    data: Union[List[AuditLogSchema], str]
+    detail: Optional[str] = None
+
+    class Config:
+        from_attributes = True 

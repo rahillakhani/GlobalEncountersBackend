@@ -1,44 +1,13 @@
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Response
 from sqlalchemy.orm import Session
-from sqlalchemy import Date, cast
-from typing import List, Optional
-from datetime import datetime, date, time
+from typing import List
+from datetime import datetime
 from app.db.session import get_db
 from app.models.audit_log import AuditLog
 from app.schemas.audit_log import AuditLogSchema, AuditLogUpdate
-from app.core.security import verify_token
 from app.crud import audit_log as crud
 
 router = APIRouter()
-
-@router.get("/by-entity/{entity_id}", response_model=List[AuditLogSchema])
-def get_audit_logs_by_entity(
-    entity_id: int,
-    db: Session = Depends(get_db)
-):
-    """
-    Get all audit logs for a specific entity ID.
-    
-    Args:
-        entity_id (int): The entity ID to search for
-        
-    Returns:
-        List[AuditLogSchema]: List of audit logs matching the entity ID
-        
-    Raises:
-        HTTPException: If no audit logs are found
-    """
-    audit_logs = db.query(AuditLog).filter(
-        AuditLog.entity_id == entity_id
-    ).all()
-    
-    if not audit_logs:
-        raise HTTPException(
-            status_code=404,
-            detail=f"No audit logs found for entity ID: {entity_id}"
-        )
-    
-    return audit_logs
 
 @router.get("/by-registration/{registration_id}", response_model=List[AuditLogSchema])
 def get_audit_logs_by_registration(
@@ -73,8 +42,7 @@ def get_audit_logs_by_registration(
 def get_audit_logs_by_schedule(
     registrationid: str,
     date: str,
-    db: Session = Depends(get_db),
-    token: dict = Depends(verify_token)
+    db: Session = Depends(get_db)
 ):
     """
     Get audit logs for a specific registration ID and date.
@@ -102,8 +70,7 @@ def get_audit_logs_by_schedule(
 @router.post("/update", response_model=AuditLogSchema)
 def update_audit_log(
     update_data: AuditLogUpdate,
-    db: Session = Depends(get_db),
-    token: dict = Depends(verify_token)
+    db: Session = Depends(get_db)
 ):
     """
     Update audit log data for a specific registration ID and date.

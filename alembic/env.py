@@ -20,22 +20,11 @@ if config.config_file_name is not None:
 
 # add your model's MetaData object here
 # for 'autogenerate' support
-# from myapp import mymodel
-# target_metadata = mymodel.Base.metadata
-from app.db.base import Base
-from app.models.user import User
-from app.models.encounter import Encounter
-from app.models.location import Location
-from app.models.category import Category
-from app.models.entitlement import Entitlement
-from app.models.audit_log import AuditLog
-from app.models.registration_type import RegistrationType
-from app.models.food_data import FoodData
+from app.db.base_model import Base  # noqa
 
 # Set the target metadata for Alembic
 # This allows Alembic to detect changes in your models
 # and autogenerate migration scripts
-
 target_metadata = Base.metadata
 
 # other values from the config, defined by the needs of env.py,

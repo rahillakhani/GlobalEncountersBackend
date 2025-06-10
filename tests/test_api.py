@@ -6,7 +6,6 @@ from app.main import app
 from app.db.session import get_db
 from app.models.user import User
 from app.models.audit_log import AuditLog
-from app.core.security import create_access_token
 
 client = TestClient(app)
 
@@ -25,10 +24,6 @@ TEST_AUDIT_LOG = {
     "lunch": 0,
     "dinner": 0
 }
-
-def get_test_token():
-    """Create a test token for authentication"""
-    return create_access_token({"sub": "testuser"})
 
 @pytest.fixture
 def test_db():
@@ -104,10 +99,8 @@ def test_get_audit_logs_by_registration(test_audit_log):
 
 def test_search_audit_logs_by_schedule(test_audit_log):
     """Test searching audit logs by schedule"""
-    token = get_test_token()
     response = client.get(
-        f"/api/v1/audit-log/search?registrationid={TEST_AUDIT_LOG['registration_id']}&date={TEST_AUDIT_LOG['date']}",
-        headers={"Authorization": f"Bearer {token}"}
+        f"/api/v1/audit-log/search?registrationid={TEST_AUDIT_LOG['registration_id']}&date={TEST_AUDIT_LOG['date']}"
     )
     assert response.status_code == 200
     data = response.json()
@@ -117,7 +110,6 @@ def test_search_audit_logs_by_schedule(test_audit_log):
 
 def test_update_audit_log(test_audit_log):
     """Test updating audit log"""
-    token = get_test_token()
     update_data = {
         "registrationid": TEST_AUDIT_LOG["registration_id"],
         "date": TEST_AUDIT_LOG["date"],
@@ -126,37 +118,9 @@ def test_update_audit_log(test_audit_log):
     }
     response = client.post(
         "/api/v1/audit-log/update",
-        json=update_data,
-        headers={"Authorization": f"Bearer {token}"}
+        json=update_data
     )
     assert response.status_code == 200
     data = response.json()
     assert data["lunch"] == 1  # True is represented as 1
-    assert data["dinner"] == 1  # True is represented as 1
-
-# Authentication tests
-def test_unauthorized_access():
-    """Test unauthorized access to protected endpoints"""
-    # Test search endpoint without token
-    response = client.get(
-        f"/api/v1/audit-log/search?registrationid={TEST_AUDIT_LOG['registration_id']}&date={TEST_AUDIT_LOG['date']}"
-    )
-    assert response.status_code == 401
-
-    # Test update endpoint without token
-    update_data = {
-        "registrationid": TEST_AUDIT_LOG["registration_id"],
-        "date": TEST_AUDIT_LOG["date"],
-        "lunch_status": True,
-        "dinner_status": True
-    }
-    response = client.post("/api/v1/audit-log/update", json=update_data)
-    assert response.status_code == 401
-
-def test_invalid_token():
-    """Test access with invalid token"""
-    response = client.get(
-        f"/api/v1/audit-log/search?registrationid={TEST_AUDIT_LOG['registration_id']}&date={TEST_AUDIT_LOG['date']}",
-        headers={"Authorization": "Bearer invalid_token"}
-    )
-    assert response.status_code == 401 
+    assert data["dinner"] == 1  # True is represented as 1 
