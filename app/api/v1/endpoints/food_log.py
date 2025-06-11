@@ -1,13 +1,15 @@
-from fastapi import APIRouter, Depends, HTTPException, Response
+from fastapi import APIRouter, Depends, HTTPException, Response, status
 from sqlalchemy.orm import Session
 from datetime import datetime, date
 import logging
 from sqlalchemy import cast, Date, func
 from app.db.session import get_db
 from app.models.food_log import FoodLog
+from app.models.user import User as UserModel
 from app.schemas.food_log import FoodLogUpdate, FoodLogSchema, FoodLogListResponse, DetailResponse
 from app.crud import food_log as crud
 from app.api import deps
+from app.core.security import get_current_user
 from typing import Union
 
 logger = logging.getLogger(__name__)
@@ -18,7 +20,8 @@ def get_food_logs_by_schedule(
     registrationid: int,
     date_str: str,
     response: Response,
-    db: Session = Depends(deps.get_db)
+    db: Session = Depends(get_db),
+    current_user: UserModel = Depends(get_current_user)
 ):
     """
     Get food logs by registration ID and date
@@ -42,13 +45,16 @@ def get_food_logs_by_schedule(
     except ValueError as e:
         logger.error(f"Invalid date format: {date_str}. Error: {e}")
         raise HTTPException(
-            status_code=400,
+            status_code=status.HTTP_400_BAD_REQUEST,
             detail="Invalid date format. Please use YYYY-MM-DD"
         )
+    except HTTPException as e:
+        # Re-raise HTTP exceptions (including auth errors) without modification
+        raise e
     except Exception as e:
         logger.error(f"Error searching food logs: {str(e)}", exc_info=True)
         raise HTTPException(
-            status_code=500,
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Internal server error"
         )
 
@@ -56,7 +62,8 @@ def get_food_logs_by_schedule(
 def update_food_log(
     response: Response,
     update_data: FoodLogUpdate,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: UserModel = Depends(get_current_user)
 ):
     """
     Update food log data for a specific registration ID and date.
@@ -88,7 +95,8 @@ def update_food_log(
 def delete_food_log(
     registration_id: int,
     date_str: str,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: UserModel = Depends(get_current_user)
 ):
     """
     Delete a food log entry for a specific registration ID and date.
