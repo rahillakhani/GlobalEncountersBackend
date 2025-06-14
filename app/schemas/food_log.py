@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field, validator
 from datetime import datetime
 from typing import Optional, List, Union, Any
 
@@ -15,26 +15,32 @@ class ParticipantData(BaseModel):
 
 class FoodLogBase(BaseModel):
     name: Optional[str] = None
-    registration_id: Optional[int] = None
+    registration_id: Optional[Union[str, int]] = None
     date: Optional[datetime] = None
     lunch: Optional[int] = None
     dinner: Optional[int] = None
     lunch_takenon: Optional[datetime] = None
     dinner_takenon: Optional[datetime] = None
 
+    @validator('registration_id', pre=True)
+    def convert_registration_id(cls, v):
+        # Return the original value without modification
+        return v
+
     class Config:
         from_attributes = True
 
 class FoodLogCreate(FoodLogBase):
-    registration_id: int  # Make registration_id required for creation
-    date: datetime  # Make date required for creation
+    registration_id: Union[str, int]  # Accept both string and int
+    date: datetime
 
 class FoodLogUpdate(FoodLogBase):
-    pass
+    registration_id: Union[str, int]  # Accept both string and int
+    date: datetime
 
 class FoodLogSchema(FoodLogBase):
-    registration_id: int  # Make registration_id required in response
-    date: datetime  # Make date required in response
+    registration_id: int  # Keep as int for database compatibility
+    date: datetime
 
     class Config:
         from_attributes = True
@@ -45,8 +51,9 @@ class FoodLogSchema(FoodLogBase):
 #         from_attributes = True
 
 class FoodLogListResponse(BaseModel):
-    data: List[FoodLogSchema]
+    food_logs: List[FoodLogSchema]
     detail: Optional[str] = None
+    access_token: str
 
     class Config:
         from_attributes = True 

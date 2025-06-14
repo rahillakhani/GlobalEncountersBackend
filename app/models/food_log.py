@@ -9,7 +9,7 @@ class FoodLog(Base):
     )
 
     name = Column(String)
-    registration_id = Column(Integer, nullable=False, index=True)
+    registration_id = Column(String, nullable=False, index=True)
     date = Column(DateTime(timezone=True), nullable=False, index=True)
     lunch = Column(Integer)
     dinner = Column(Integer)
