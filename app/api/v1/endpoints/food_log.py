@@ -1,66 +1,73 @@
-from fastapi import APIRouter, Depends, HTTPException, Response, status
+from fastapi import APIRouter, Depends, HTTPException, Response, status, Request
 from sqlalchemy.orm import Session
+from sqlalchemy.types import String
 from datetime import datetime, date
 import logging
-from sqlalchemy import cast, Date, func
+from sqlalchemy import cast, Date, func, text
 from app.db.session import get_db
 from app.models.food_log import FoodLog
 from app.models.user import User as UserModel
 from app.schemas.food_log import FoodLogUpdate, FoodLogSchema, FoodLogListResponse, DetailResponse
 from app.crud import food_log as crud
 from app.api import deps
-from app.core.security import get_current_user
+from app.core.security import get_current_user, create_access_token
 from typing import Union
+from app.core.config import settings
+from datetime import timedelta
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
 
 @router.get("/search", response_model=Union[FoodLogListResponse, DetailResponse])
 def get_food_logs_by_schedule(
-    registrationid: int,
-    date_str: str,
     response: Response,
+    registrationid: str,
+    date_str: str,
     db: Session = Depends(get_db),
     current_user: UserModel = Depends(get_current_user)
 ):
     """
-    Get food logs by registration ID and date
+    Get food logs by registration ID and date.
     """
     try:
-        logger.info(f"Attempting to parse date: {repr(date_str)} (type: {type(date_str)}). Bytes: {date_str.strip().encode('utf-8')}")
-        search_date = date.fromisoformat(date_str.strip())
-
-        food_log = db.query(FoodLog).filter(
-            FoodLog.registration_id == registrationid,
-            func.date(FoodLog.date) == search_date
-        ).first()
-
-        if not food_log:
+        food_logs = crud.get_food_logs_by_schedule(db, registrationid, date_str)
+        if not food_logs:
+            response.status_code = 200
             return DetailResponse(detail="No data found")
 
-        # Convert the food log to a FoodLogSchema (which no longer includes userid) and wrap it in a list
-        food_log_schema = FoodLogSchema.from_orm(food_log)
-        return FoodLogListResponse(data=[food_log_schema])
-
-    except ValueError as e:
-        logger.error(f"Invalid date format: {date_str}. Error: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid date format. Please use YYYY-MM-DD"
+        # Generate new token
+        access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+        new_token = create_access_token(
+            data={"sub": current_user.username}, expires_delta=access_token_expires
         )
-    except HTTPException as e:
-        # Re-raise HTTP exceptions (including auth errors) without modification
-        raise e
+
+        # Convert food logs to schema format
+        food_log_schemas = []
+        for log in food_logs:
+            food_log_schemas.append(FoodLogSchema(
+                name=log.name,
+                registration_id=log.registration_id,
+                date=log.date,
+                lunch=log.lunch,
+                dinner=log.dinner,
+                lunch_takenon=log.lunch_takenon,
+                dinner_takenon=log.dinner_takenon
+            ))
+
+        return FoodLogListResponse(
+            food_logs=food_log_schemas,
+            detail=None,
+            access_token=new_token
+        )
     except Exception as e:
         logger.error(f"Error searching food logs: {str(e)}", exc_info=True)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Internal server error"
-        )
+        response.status_code = 500
+        return DetailResponse(detail=f"An error occurred: {str(e)}")
 
 @router.post("/update", response_model=Union[FoodLogSchema, DetailResponse])
 def update_food_log(
     response: Response,
+    request: Request,
     update_data: FoodLogUpdate,
     db: Session = Depends(get_db),
     current_user: UserModel = Depends(get_current_user)
@@ -82,7 +89,25 @@ def update_food_log(
         if log is None:
             response.status_code = 400
             return DetailResponse(detail="Cannot create new food log: 'userid' is required for new entries.")
-        return log
+        
+        # Generate new token
+        access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+        new_token = create_access_token(
+            data={"sub": current_user.username}, expires_delta=access_token_expires
+        )
+        
+        # Convert log to dict and add new token
+        log_dict = {
+            "name": log.name,
+            "registration_id": log.registration_id,
+            "date": log.date,
+            "lunch": log.lunch,
+            "dinner": log.dinner,
+            "lunch_takenon": log.lunch_takenon,
+            "dinner_takenon": log.dinner_takenon,
+            "access_token": new_token
+        }
+        return log_dict
     except ValueError as e:
         response.status_code = 400
         return DetailResponse(detail=str(e))
@@ -142,4 +167,9 @@ def delete_food_log(
         raise HTTPException(
             status_code=500,
             detail=f"An error occurred while deleting food log: {str(e)}"
-        ) 
+        )
+
+@router.get("/some-endpoint")
+def some_endpoint(current_user: UserModel = Depends(get_current_user)):
+    # This endpoint is only accessible if the user is authenticated
+    return {"message": f"Hello, {current_user.username}!"} 

@@ -1,6 +1,9 @@
 from sqlalchemy.orm import Session
+from sqlalchemy import func, text, cast
+from sqlalchemy.types import String
 from app.models.participant import Participant
 from app.schemas.participant import ParticipantCreate, ParticipantUpdate
+from datetime import date
 
 def get_participant(db: Session, registrant_id: int):
     return db.query(Participant).filter(Participant.registrant_id == registrant_id).first()
@@ -29,4 +32,19 @@ def delete_participant(db: Session, registrant_id: int):
     if db_participant:
         db.delete(db_participant)
         db.commit()
-    return db_participant 
+    return db_participant
+
+def get_participant_by_schedule(db: Session, registrationid: int, date_str: str):
+    """
+    Get participant data by registration ID and date.
+    """
+    # Convert date string to date object
+    search_date = date.fromisoformat(date_str.strip())
+    
+    # Build the main query - convert UTC to PKT by adding 5 hours
+    query = db.query(Participant).filter(
+        cast(Participant.registrant_id, String) == str(registrationid),
+        func.date(Participant.date + text("INTERVAL '5 hours'")) == search_date
+    )
+    
+    return query.first() 

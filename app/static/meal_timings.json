@@ -1,0 +1,42 @@
+{
+  "lunch": {
+    "name": "Lunch",
+    "description": "Regular lunch service",
+    "start_time": "11:30",
+    "end_time": "14:30",
+    "display_start": "11:30 AM",
+    "display_end": "02:30 PM"
+  },
+  "dinner": {
+    "name": "Dinner",
+    "description": "Regular dinner service",
+    "start_time": "18:00",
+    "end_time": "21:00",
+    "display_start": "06:00 PM",
+    "display_end": "09:00 PM"
+  },
+  "meal_window": {
+    "late_threshold": 30,
+    "early_threshold": 15
+  },
+  "special_meals": {
+    "breakfast": {
+      "name": "Breakfast",
+      "description": "Special breakfast service",
+      "start_time": "07:00",
+      "end_time": "09:30",
+      "display_start": "07:00 AM",
+      "display_end": "09:30 AM",
+      "is_active": false
+    },
+    "late_night": {
+      "name": "Late Night Snacks",
+      "description": "Late night snack service",
+      "start_time": "22:00",
+      "end_time": "23:30",
+      "display_start": "10:00 PM",
+      "display_end": "11:30 PM",
+      "is_active": false
+    }
+  }
+}

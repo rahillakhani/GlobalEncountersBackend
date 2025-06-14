@@ -18,6 +18,7 @@ else
   cat > .env << EOL
 DATABASE_URL=postgresql+psycopg2://admin:admin@localhost:5432/postgres
 JWT_SECRET_KEY=$(openssl rand -hex 32)
+JWT_REFRESH_SECRET_KEY=$(openssl rand -hex 32)
 PORT=8000
 EOL
   echo -e "${GREEN}Created .env file with default values${NC}"
@@ -90,7 +91,7 @@ if [[ "$DEPLOY_AZURE" == "y" || "$DEPLOY_AZURE" == "Y" ]]; then
   az webapp create --name $APP_NAME --resource-group $RG_NAME --plan "${APP_NAME}-plan" --deployment-container-image-name $ACR_NAME.azurecr.io/$IMAGE_NAME:latest
 
   echo -e "${GREEN}Configuring environment variables...${NC}"
-  az webapp config appsettings set --name $APP_NAME --resource-group $RG_NAME --settings DATABASE_URL="$DATABASE_URL" JWT_SECRET_KEY="$JWT_SECRET_KEY" PORT="8000"
+  az webapp config appsettings set --name $APP_NAME --resource-group $RG_NAME --settings DATABASE_URL="$DATABASE_URL" JWT_SECRET_KEY="$JWT_SECRET_KEY" JWT_REFRESH_SECRET_KEY="$JWT_REFRESH_SECRET_KEY" PORT="8000"
 
   echo -e "${GREEN}Configuring container settings...${NC}"
   az webapp config container set --name $APP_NAME --resource-group $RG_NAME --docker-custom-image-name $ACR_NAME.azurecr.io/$IMAGE_NAME:latest --docker-registry-server-url https://$ACR_NAME.azurecr.io

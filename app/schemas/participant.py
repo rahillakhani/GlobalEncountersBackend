@@ -45,6 +45,10 @@ class ParticipantUpdate(ParticipantBase):
 class ParticipantListResponse(BaseModel):
     userid: Optional[int] = None
     name: Optional[str] = None
-    registration_id: Optional[int] = None
+    registration_id: Optional[str] = None
     date: Optional[datetime] = None
-    detail: Optional[str] = None 
+    detail: Optional[str] = None
+    access_token: Optional[str] = None
+
+    class Config:
+        from_attributes = True 

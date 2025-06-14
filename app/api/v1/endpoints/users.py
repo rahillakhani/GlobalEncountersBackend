@@ -1,17 +1,19 @@
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.orm import Session
 import bcrypt
 from pydantic import BaseModel
 import logging
 import os
 from typing import Union
-from datetime import date
+from datetime import date, datetime, timedelta
 from sqlalchemy import func
 
 from app.db.session import get_db
 from app.schemas.user import User, UserCreate, UserUpdate
 from app.models.user import User as UserModel
 from app.schemas.food_log import FoodLogListResponse, DetailResponse
+from app.core.security import create_access_token, create_tokens, refresh_access_token
+from app.core.config import settings
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
@@ -24,6 +26,9 @@ class LoginRequest(BaseModel):
     password: str
 
 class LoginResponse(BaseModel):
+    access_token: str
+    refresh_token: str
+    token_type: str
     user: User
 
 @router.post("/", response_model=User)
@@ -87,7 +92,7 @@ async def login(
     db: Session = Depends(get_db)
 ):
     """
-    Login endpoint that accepts username and password only
+    Login endpoint that accepts username and password and returns JWT tokens
     """
     try:
         # Parse the request body
@@ -113,7 +118,7 @@ async def login(
                 detail="Incorrect username or password"
             )
         
-        # Verify password (compare with 'password' column)
+        # Verify password
         if not bcrypt.checkpw(password.encode('utf-8'), user.password.encode('utf-8')):
             logger.error(f"Invalid password for user: {username}")
             raise HTTPException(
@@ -121,14 +126,43 @@ async def login(
                 detail="Incorrect username or password"
             )
         
+        # Create access and refresh tokens
+        access_token, refresh_token = create_tokens(data={"sub": user.username})
+        
         logger.info(f"Successful login for user: {username}")
         return {
+            "access_token": access_token,
+            "refresh_token": refresh_token,
+            "token_type": "bearer",
             "user": User.from_orm(user)
         }
     except HTTPException as e:
         raise e
     except Exception as e:
         logger.error(f"Login error: {str(e)}", exc_info=True)
+        raise HTTPException(
+            status_code=500,
+            detail="Internal server error"
+        )
+
+@router.post("/refresh", response_model=dict)
+async def refresh_token(
+    refresh_token: str,
+    db: Session = Depends(get_db)
+):
+    """
+    Refresh access token using refresh token
+    """
+    try:
+        new_access_token = await refresh_access_token(refresh_token, db)
+        return {
+            "access_token": new_access_token,
+            "token_type": "bearer"
+        }
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        logger.error(f"Token refresh error: {str(e)}", exc_info=True)
         raise HTTPException(
             status_code=500,
             detail="Internal server error"

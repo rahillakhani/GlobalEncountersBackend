@@ -7,6 +7,6 @@ class Participant(Base):
     __table_args__ = {"schema": "fnb"}
 
     id = Column(Integer, primary_key=True, index=True)
-    registrant_id = Column(Integer, index=True)
+    registrant_id = Column(String, index=True)
     date = Column(DateTime(timezone=True), index=True)
     participant_type = Column(String(50), index=True)

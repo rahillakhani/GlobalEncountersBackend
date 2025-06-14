@@ -8,13 +8,6 @@ from sqlalchemy import func
 def create_error_log(db: Session, error_log: ErrorLogCreate) -> ErrorLog:
     """
     Create a new error log entry in the database.
-    
-    Args:
-        db (Session): Database session
-        error_log (ErrorLogCreate): Error log data to create
-        
-    Returns:
-        ErrorLog: Created error log entry
     """
     db_error_log = ErrorLog(
         user_id=error_log.user_id,

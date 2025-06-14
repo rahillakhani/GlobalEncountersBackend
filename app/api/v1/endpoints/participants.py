@@ -1,13 +1,16 @@
-from fastapi import APIRouter, Depends, HTTPException, Response
+from fastapi import APIRouter, Depends, HTTPException, Response, Request
 from sqlalchemy.orm import Session
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 import logging
-from sqlalchemy import cast, Date, text, func
+from sqlalchemy import cast, Date, text, func, String, literal
 from app.db.session import get_db
 from app.models.participant import Participant
 from app.schemas.participant import ParticipantBase, ParticipantUpdate, ParticipantResponse, ParticipantListResponse, DetailResponse, ParticipantCreate
 from app.crud import participant as crud
 from typing import Union
+from app.core.security import get_current_user, create_access_token
+from app.models.user import User as UserModel
+from app.core.config import settings
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
@@ -17,62 +20,37 @@ router = APIRouter()
 
 @router.get("/search", response_model=Union[ParticipantListResponse, DetailResponse])
 def get_participant_by_schedule(
-    registrationid: int,
-    date: str,
     response: Response,
-    db: Session = Depends(get_db)
+    registrationid: str,
+    date: str,
+    db: Session = Depends(get_db),
+    current_user: UserModel = Depends(get_current_user)
 ):
     """
-    Get participant data for a specific registration ID and date.
-    
-    Args:
-        registrationid (int): The registration ID to search for
-        date (str): The date in YYYY-MM-DD format
-        
-    Returns:
-        Union[ParticipantListResponse, DetailResponse]: Participant data with registration_id and date, or a detail message if not found.
+    Get participant data by registration ID and date.
     """
     try:
-        # Convert date string to datetime
-        search_date = datetime.strptime(date, "%Y-%m-%d").date()
-        
-        # Log the search parameters
-        logger.info(f"Searching for registration_id: {registrationid}, date: {search_date}")
-        
-        # Query using func.date() to properly handle timezone-aware dates
-        query = db.query(Participant).filter(
-            Participant.registrant_id == registrationid,
-            func.date(Participant.date) == search_date
-        )
-        
-        # Log the SQL query
-        logger.info(f"SQL Query: {query}")
-        
-        # Execute query
-        participant = query.first()
-        
-        # Log the results
-        if participant:
-            logger.info(f"Found participant: registration_id={participant.registrant_id}, date={participant.date}")
-            return ParticipantListResponse(
-                userid=participant.id,
-                name=participant.participant_type,
-                registration_id=participant.registrant_id,
-                date=participant.date,
-                detail=None
-            )
-        else:
-            logger.info("No participant found")
+        participant = crud.get_participant_by_schedule(db, registrationid, date)
+        if not participant:
+            response.status_code = 200
             return DetailResponse(detail="No data found")
-            
-    except ValueError as e:
-        if "time data" in str(e):
-            response.status_code = 400
-            return DetailResponse(detail="Invalid date format. Please use YYYY-MM-DD format.")
-        response.status_code = 400
-        return DetailResponse(detail=str(e))
+
+        # Generate new token
+        access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+        new_token = create_access_token(
+            data={"sub": current_user.username}, expires_delta=access_token_expires
+        )
+
+        return ParticipantListResponse(
+            userid=participant.id,
+            name=participant.participant_type,
+            registration_id=participant.registrant_id,
+            date=participant.date,
+            detail=None,
+            access_token=new_token
+        )
     except Exception as e:
-        logger.error(f"Error occurred: {str(e)}", exc_info=True)
+        logger.error(f"Error getting participants: {str(e)}", exc_info=True)
         response.status_code = 500
         return DetailResponse(detail=f"An error occurred: {str(e)}")
 

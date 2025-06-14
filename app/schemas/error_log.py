@@ -6,8 +6,8 @@ class DetailResponse(BaseModel):
     detail: str
 
 class ErrorLogBase(BaseModel):
-    user_id: Optional[int] = None
-    registrant_id: Optional[int] = None
+    user_id: int
+    registrant_id: int
     error: str
     scan_time: datetime
 
@@ -21,15 +21,19 @@ class ErrorLogSchema(ErrorLogBase):
         from_attributes = True
 
 class ErrorLogResponse(BaseModel):
-    data: Optional[ErrorLogSchema] = None
-    detail: Optional[str] = None
+    userid: int
+    registrant_id: int
+    error: str
+    scan_time: datetime
+    access_token: str
 
     class Config:
         from_attributes = True
 
 class ErrorLogListResponse(BaseModel):
-    data: Optional[List[ErrorLogSchema]] = None
+    error_logs: List[ErrorLogResponse]
     detail: Optional[str] = None
+    access_token: str
 
     class Config:
         from_attributes = True 
