@@ -19,10 +19,22 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    # Add device_id column to users table
+    # Add device_id column to users table, but only if it doesn't already exist
+    conn = op.get_bind()
+    result = conn.execute(sa.text("""
+        SELECT column_name FROM information_schema.columns
+        WHERE table_schema='fnb' AND table_name='users' AND column_name='device_id'
+    """))
+    if not result.fetchone():
     op.add_column('users', sa.Column('device_id', sa.String(100), nullable=True), schema='fnb')
 
 
 def downgrade() -> None:
-    # Remove device_id column from users table
+    # Remove device_id column from users table, but only if it exists
+    conn = op.get_bind()
+    result = conn.execute(sa.text("""
+        SELECT column_name FROM information_schema.columns
+        WHERE table_schema='fnb' AND table_name='users' AND column_name='device_id'
+    """))
+    if result.fetchone():
     op.drop_column('users', 'device_id', schema='fnb')

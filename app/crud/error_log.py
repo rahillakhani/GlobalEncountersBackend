@@ -13,7 +13,8 @@ def create_error_log(db: Session, error_log: ErrorLogCreate) -> ErrorLog:
         user_id=error_log.user_id,
         registrant_id=error_log.registrant_id,
         scan_time=error_log.scan_time,
-        error=error_log.error
+        error=error_log.error,
+        error_code=error_log.error_code
     )
     db.add(db_error_log)
     db.commit()
@@ -26,6 +27,7 @@ def get_error_logs(
     limit: int = 100,
     user_id: Optional[int] = None,
     registrant_id: Optional[int] = None,
+    error_code: Optional[str] = None,
     start_date: Optional[date] = None,
     end_date: Optional[date] = None
 ) -> list[ErrorLog]:
@@ -38,6 +40,7 @@ def get_error_logs(
         limit (int): Maximum number of records to return
         user_id (int, optional): Filter by user ID
         registrant_id (int, optional): Filter by registrant ID
+        error_code (str, optional): Filter by error code (e.g., "01", "02", "03")
         start_date (date, optional): Filter by start date
         end_date (date, optional): Filter by end date
         
@@ -50,6 +53,8 @@ def get_error_logs(
         query = query.filter(ErrorLog.user_id == user_id)
     if registrant_id is not None:
         query = query.filter(ErrorLog.registrant_id == registrant_id)
+    if error_code is not None:
+        query = query.filter(ErrorLog.error_code == error_code)
     if start_date is not None:
         query = query.filter(func.date(ErrorLog.scan_time) >= start_date)
     if end_date is not None:

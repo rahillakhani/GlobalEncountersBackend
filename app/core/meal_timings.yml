@@ -2,14 +2,14 @@
 # All times are in 24-hour format (HH:MM)
 
 lunch:
-  start_time: "11:30"
-  end_time: "14:30"
+  start_time: "10:00"
+  end_time: "15:00"
   name: "Lunch"
   description: "Regular lunch service"
 
 dinner:
-  start_time: "18:00"
-  end_time: "21:00"
+  start_time: "17:00"
+  end_time: "22:00"
   name: "Dinner"
   description: "Regular dinner service"
 

@@ -31,11 +31,9 @@ def get_food_logs_by_schedule(db: Session, registrationid: Union[str, int], date
     try:
         search_date = date.fromisoformat(date_str.strip())
         
-        # Convert registration_id to int if it's a string
-        if isinstance(registrationid, str):
-            numeric_part = ''.join(filter(str.isdigit, registrationid))
-            if numeric_part:
-                registrationid = int(numeric_part)
+        # Convert registration_id to string if it's an integer
+        if isinstance(registrationid, int):
+            registrationid = str(registrationid)
         
         # For special registrations, return all entries for the day
         if is_special_registration(registrationid):

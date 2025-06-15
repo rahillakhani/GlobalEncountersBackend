@@ -24,8 +24,8 @@ class FoodLogBase(BaseModel):
 
     @validator('registration_id', pre=True)
     def convert_registration_id(cls, v):
-        # Return the original value without modification
-        return v
+        # Convert to string if it's not None
+        return str(v) if v is not None else v
 
     class Config:
         from_attributes = True
@@ -39,7 +39,7 @@ class FoodLogUpdate(FoodLogBase):
     date: datetime
 
 class FoodLogSchema(FoodLogBase):
-    registration_id: int  # Keep as int for database compatibility
+    registration_id: Union[str, int]  # Accept both string and int
     date: datetime
 
     class Config:

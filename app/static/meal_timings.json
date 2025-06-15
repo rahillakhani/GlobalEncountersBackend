@@ -2,18 +2,18 @@
   "lunch": {
     "name": "Lunch",
     "description": "Regular lunch service",
-    "start_time": "11:30",
-    "end_time": "14:30",
-    "display_start": "11:30 AM",
-    "display_end": "02:30 PM"
+    "start_time": "10:00",
+    "end_time": "15:00",
+    "display_start": "10:00 AM",
+    "display_end": "3:00 PM"
   },
   "dinner": {
     "name": "Dinner",
     "description": "Regular dinner service",
-    "start_time": "18:00",
-    "end_time": "21:00",
-    "display_start": "06:00 PM",
-    "display_end": "09:00 PM"
+    "start_time": "17:00",
+    "end_time": "22:00",
+    "display_start": "5:00 PM",
+    "display_end": "10:00 PM"
   },
   "meal_window": {
     "late_threshold": 30,

@@ -1,0 +1,22 @@
+{
+  "lunch": {
+    "name": "Lunch",
+    "description": "Lunch Service",
+    "start_time": "10:00",
+    "end_time": "15:00",
+    "display_start": "10:00 AM",
+    "display_end": "3:00 PM"
+  },
+  "dinner": {
+    "name": "Dinner",
+    "description": "Dinner Service",
+    "start_time": "17:00",
+    "end_time": "22:00",
+    "display_start": "5:00 PM",
+    "display_end": "10:00 PM"
+  },
+  "meal_window": {
+    "early_threshold": 30,
+    "late_threshold": 30
+  }
+}

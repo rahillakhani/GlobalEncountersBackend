@@ -10,4 +10,5 @@ class ErrorLog(Base):
     user_id = Column(Integer, index=True)
     registrant_id = Column(String, index=True)
     scan_time = Column(DateTime(timezone=True), index=True)
-    error = Column(Text) 
+    error = Column(Text)
+    error_code = Column(String(10), index=True) 
