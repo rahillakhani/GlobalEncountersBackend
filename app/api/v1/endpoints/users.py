@@ -4,7 +4,7 @@ import bcrypt
 from pydantic import BaseModel
 import logging
 import os
-from typing import Union
+from typing import Union, Optional
 from datetime import date, datetime, timedelta
 from sqlalchemy import func
 
@@ -24,6 +24,7 @@ router = APIRouter()
 class LoginRequest(BaseModel):
     username: str
     password: str
+    device_id: Optional[str] = None
 
 class LoginResponse(BaseModel):
     access_token: str
@@ -37,11 +38,12 @@ def create_user(
     db: Session = Depends(get_db),
     user_in: UserCreate
 ):
-    user = db.query(UserModel).filter(UserModel.email == user_in.email).first()
+    # Check if username already exists
+    user = db.query(UserModel).filter(UserModel.username == user_in.username).first()
     if user:
         raise HTTPException(
             status_code=400,
-            detail="The user with this email already exists in the system.",
+            detail="The user with this username already exists in the system.",
         )
     
     # Hash the password
@@ -49,9 +51,10 @@ def create_user(
     hashed_password = bcrypt.hashpw(user_in.password.encode('utf-8'), salt)
     
     user = UserModel(
-        email=user_in.email,
         username=user_in.username,
-        password=hashed_password.decode('utf-8')  # Store the hashed password
+        password=hashed_password.decode('utf-8'),  # Store the hashed password
+        device_id=user_in.device_id,
+        email=user_in.email
     )
     db.add(user)
     db.commit()
@@ -92,13 +95,14 @@ async def login(
     db: Session = Depends(get_db)
 ):
     """
-    Login endpoint that accepts username and password and returns JWT tokens
+    Login endpoint that accepts username, password, and device_id and returns JWT tokens
     """
     try:
         # Parse the request body
         body = await request.json()
         username = body.get("username")
         password = body.get("password")
+        device_id = body.get("device_id")
         
         logger.info(f"Login attempt for username: {username}")
         
@@ -125,6 +129,11 @@ async def login(
                 status_code=401,
                 detail="Incorrect username or password"
             )
+        
+        # Update device_id if provided
+        if device_id:
+            user.device_id = device_id
+            db.commit()
         
         # Create access and refresh tokens
         access_token, refresh_token = create_tokens(data={"sub": user.username})

@@ -15,7 +15,7 @@ class Settings(BaseSettings):
     # JWT settings
     SECRET_KEY: str = Field(default="your-secret-key-here", alias="JWT_SECRET_KEY")
     ALGORITHM: str = "HS256"
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 15
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 15  # 15 minutes
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
     REFRESH_TOKEN_SECRET_KEY: str = Field(default="your-refresh-secret-key-here", alias="JWT_REFRESH_SECRET_KEY")
     
