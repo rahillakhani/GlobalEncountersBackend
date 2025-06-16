@@ -34,11 +34,11 @@ app = FastAPI(
 # Configure CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Allow all origins in development
+    allow_origins=settings.get_allowed_origins,  # Allow both HTTP and HTTPS origins
     allow_credentials=True,
-    allow_methods=["*"],  # Allow all methods
-    allow_headers=["*"],  # Allow all headers
-    expose_headers=["Content-Type", "Access-Control-Allow-Origin"]
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],  # Explicitly specify allowed methods
+    allow_headers=["Authorization", "Content-Type", "Accept"],  # Explicitly specify allowed headers
+    expose_headers=["Content-Type"]
 )
 
 # Custom exception handler
@@ -49,9 +49,11 @@ async def custom_exception_handler(request: Request, exc: Exception):
         content={"detail": str(exc) if not isinstance(exc, Exception) else "Data not found"}
     )
     # Add CORS headers to error responses
-    response.headers["Access-Control-Allow-Origin"] = "*"
+    origin = request.headers.get("origin", settings.FRONTEND_URL)
+    if origin in settings.get_allowed_origins:
+        response.headers["Access-Control-Allow-Origin"] = origin
     response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS"
-    response.headers["Access-Control-Allow-Headers"] = "*"
+    response.headers["Access-Control-Allow-Headers"] = "Authorization, Content-Type, Accept"
     response.headers["Access-Control-Expose-Headers"] = "Content-Type"
     return response
 

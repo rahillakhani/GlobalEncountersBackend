@@ -1,4 +1,4 @@
-#!/bin/bash
+ #!/bin/bash
 GREEN='\033[0;32m'
 RED='\033[0;31m'
 NC='\033[0m'
@@ -20,6 +20,8 @@ DATABASE_URL=postgresql+psycopg2://admin:admin@localhost:5432/postgres
 JWT_SECRET_KEY=$(openssl rand -hex 32)
 JWT_REFRESH_SECRET_KEY=$(openssl rand -hex 32)
 PORT=8000
+FRONTEND_URL=http://localhost:3000
+FRONTEND_URL_HTTPS=https://localhost:3000
 EOL
   echo -e "${GREEN}Created .env file with default values${NC}"
 fi

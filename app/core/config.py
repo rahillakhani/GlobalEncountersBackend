@@ -19,11 +19,23 @@ class Settings(BaseSettings):
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
     REFRESH_TOKEN_SECRET_KEY: str = Field(default="your-refresh-secret-key-here", alias="JWT_REFRESH_SECRET_KEY")
     
+    # Frontend URLs for CORS (both HTTP and HTTPS)
+    FRONTEND_URL: str = Field(default="http://localhost:3000", alias="FRONTEND_URL")
+    FRONTEND_URL_HTTPS: str = Field(default="https://localhost:3000", alias="FRONTEND_URL_HTTPS")
+    
     # Optional settings for other environment variables (if they exist in .env)
     port: Optional[int] = Field(8000, alias="PORT")
 
     @property
     def get_database_url(self) -> str:
         return self.database_url
+
+    @property
+    def get_allowed_origins(self) -> list[str]:
+        """Get list of allowed origins for CORS"""
+        origins = [self.FRONTEND_URL]
+        if self.FRONTEND_URL_HTTPS:
+            origins.append(self.FRONTEND_URL_HTTPS)
+        return origins
 
 settings = Settings() 
