@@ -95,7 +95,8 @@ async def login(
     db: Session = Depends(get_db)
 ):
     """
-    Login endpoint that accepts username, password, and device_id and returns JWT tokens
+    Login endpoint that accepts username, password, and device_id and returns JWT tokens.
+    Device ID validation is strictly enforced - device_id must match exactly and cannot be changed.
     """
     try:
         # Parse the request body
@@ -129,11 +130,28 @@ async def login(
                 status_code=401,
                 detail="Incorrect username or password"
             )
-        
-        # Update device_id if provided
-        if device_id:
+
+        # Strict Device ID validation
+        if not device_id:
+            logger.error(f"Device ID is required for login: {username}")
+            raise HTTPException(
+                status_code=400,
+                detail="Device ID is required for login"
+            )
+
+        if user.device_id:
+            # If user has a device_id, it must match exactly
+            if device_id != user.device_id:
+                logger.error(f"Device ID mismatch for user: {username}")
+                raise HTTPException(
+                    status_code=403,
+                    detail="Login not allowed from different device"
+                )
+        else:
+            # If user doesn't have a device_id, set it permanently
             user.device_id = device_id
             db.commit()
+            logger.info(f"Set permanent device ID for user: {username}")
         
         # Create access and refresh tokens
         access_token, refresh_token = create_tokens(data={"sub": user.username})
