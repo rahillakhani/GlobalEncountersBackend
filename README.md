@@ -1,3 +1,5 @@
+[![Build and deploy Python app to Azure Web App - fnb-gef2025-dev](https://github.com/rahillakhani/GlobalEncountersBackend/actions/workflows/main_fnb-gef2025-dev.yml/badge.svg)](https://github.com/rahillakhani/GlobalEncountersBackend/actions/workflows/main_fnb-gef2025-dev.yml)
+
 # Global Encounters Application Backend
 
 ## Deployment Instructions
