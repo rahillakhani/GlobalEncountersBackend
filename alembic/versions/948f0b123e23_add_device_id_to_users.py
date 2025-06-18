@@ -26,7 +26,7 @@ def upgrade() -> None:
         WHERE table_schema='fnb' AND table_name='users' AND column_name='device_id'
     """))
     if not result.fetchone():
-    op.add_column('users', sa.Column('device_id', sa.String(100), nullable=True), schema='fnb')
+        op.add_column('users', sa.Column('device_id', sa.String(100), nullable=True), schema='fnb')
 
 
 def downgrade() -> None:
@@ -37,4 +37,4 @@ def downgrade() -> None:
         WHERE table_schema='fnb' AND table_name='users' AND column_name='device_id'
     """))
     if result.fetchone():
-    op.drop_column('users', 'device_id', schema='fnb')
+        op.drop_column('users', 'device_id', schema='fnb')

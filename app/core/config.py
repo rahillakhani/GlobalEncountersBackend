@@ -10,7 +10,7 @@ class Settings(BaseSettings):
     API_V1_STR: str = "/api/v1"
     
     # Database settings - explicitly mapped from DATABASE_URL in .env
-    database_url: str = Field(alias="DATABASE_URL") # Using alias to map to DATABASE_URL in .env
+    database_url: str = Field(alias="DATABASE_URL")
     
     # JWT settings
     SECRET_KEY: str = Field(default="your-secret-key-here", alias="JWT_SECRET_KEY")
@@ -23,8 +23,14 @@ class Settings(BaseSettings):
     FRONTEND_URL: str = Field(default="http://localhost:3000", alias="FRONTEND_URL")
     FRONTEND_URL_HTTPS: str = Field(default="https://localhost:3000", alias="FRONTEND_URL_HTTPS")
     
-    # Optional settings for other environment variables (if they exist in .env)
+    # Application settings
     port: Optional[int] = Field(8000, alias="PORT")
+    
+    # Azure specific settings
+    AZURE_POSTGRES_SSL_MODE: str = "require"
+    AZURE_POSTGRES_CONNECTION_TIMEOUT: int = 10
+    AZURE_POSTGRES_POOL_SIZE: int = 20
+    AZURE_POSTGRES_MAX_OVERFLOW: int = 30
 
     @property
     def get_database_url(self) -> str:

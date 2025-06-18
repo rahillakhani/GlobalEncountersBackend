@@ -26,7 +26,7 @@ def upgrade() -> None:
         WHERE table_schema='fnb' AND table_name='food_logs' AND constraint_type='PRIMARY KEY' AND constraint_name='food_logs_pkey'
     """))
     if result.fetchone():
-    op.drop_constraint('food_logs_pkey', 'food_logs', schema='fnb')
+        op.drop_constraint('food_logs_pkey', 'food_logs', schema='fnb')
     
     # Add a new composite primary key if it doesn't exist
     result = conn.execute(sa.text("""
@@ -34,12 +34,12 @@ def upgrade() -> None:
         WHERE table_schema='fnb' AND table_name='food_logs' AND constraint_type='PRIMARY KEY' AND constraint_name='food_logs_pkey'
     """))
     if not result.fetchone():
-    op.create_primary_key(
-        'food_logs_pkey',
-        'food_logs',
-        ['userid', 'date'],
-        schema='fnb'
-    )
+        op.create_primary_key(
+            'food_logs_pkey',
+            'food_logs',
+            ['userid', 'date'],
+            schema='fnb'
+        )
 
 
 def downgrade() -> None:
@@ -50,7 +50,7 @@ def downgrade() -> None:
         WHERE table_schema='fnb' AND table_name='food_logs' AND constraint_type='PRIMARY KEY' AND constraint_name='food_logs_pkey'
     """))
     if result.fetchone():
-    op.drop_constraint('food_logs_pkey', 'food_logs', schema='fnb')
+        op.drop_constraint('food_logs_pkey', 'food_logs', schema='fnb')
     
     # Restore the original primary key if it doesn't exist
     result = conn.execute(sa.text("""
@@ -58,9 +58,9 @@ def downgrade() -> None:
         WHERE table_schema='fnb' AND table_name='food_logs' AND constraint_type='PRIMARY KEY' AND constraint_name='food_logs_pkey'
     """))
     if not result.fetchone():
-    op.create_primary_key(
-        'food_logs_pkey',
-        'food_logs',
-        ['userid'],
-        schema='fnb'
-    ) 
+        op.create_primary_key(
+            'food_logs_pkey',
+            'food_logs',
+            ['userid'],
+            schema='fnb'
+        ) 
